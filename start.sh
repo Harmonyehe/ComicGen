@@ -1,2 +1,2 @@
 #!/bin/bash
-npx tsx --env-file=.env server/index.ts
+npx tsx server/index.ts
