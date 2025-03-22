@@ -1,1 +1,2 @@
-Start application
+run = "node run.js"
+language = "nodejs"

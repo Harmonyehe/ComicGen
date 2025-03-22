@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - COMITALE</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background-color: #f8e6ff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background-color: #e951ff;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .logo {
+      font-size: 2.5rem;
+      font-weight: bold;
+      text-shadow: 2px 2px 0 #000;
+    }
+    main {
+      flex: 1;
+      padding: 2rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .register-form {
+      background-color: white;
+      border: 5px solid #000;
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      box-shadow: 8px 8px 0 #000;
+      position: relative;
+      overflow: hidden;
+    }
+    .register-form::before {
+      content: "NEW!";
+      position: absolute;
+      top: -10px;
+      right: -30px;
+      background-color: #ffff00;
+      color: #ff0000;
+      padding: 0.5rem 2.5rem;
+      transform: rotate(45deg);
+      font-weight: bold;
+      font-size: 0.8rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .register-form h1 {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      color: #e951ff;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: 3px solid #000;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 1rem 2rem;
+      background-color: #e951ff;
+      color: white;
+      font-size: 1.2rem;
+      border: 3px solid #000;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      width: 100%;
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+    button:hover {
+      background-color: #d33deb;
+    }
+    .login-link {
+      margin-top: 1.5rem;
+    }
+    .login-link a {
+      color: #e951ff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+    footer {
+      background-color: #333;
+      color: white;
+      text-align: center;
+      padding: 1rem;
+      margin-top: auto;
+    }
+    .back-link {
+      margin-top: 2rem;
+      text-align: center;
+    }
+    .back-link a {
+      color: #e951ff;
+      text-decoration: none;
+    }
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+    .error-message {
+      color: #ff0000;
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      text-align: left;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">COMITALE</div>
+  </header>
+  <main>
+    <form class="register-form">
+      <h1>Register</h1>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required placeholder="Choose a username">
+        <div id="username-error" class="error-message"></div>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required placeholder="Enter your email">
+        <div id="email-error" class="error-message"></div>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required placeholder="Create a password">
+        <div id="password-error" class="error-message"></div>
+      </div>
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Confirm your password">
+        <div id="confirmPassword-error" class="error-message"></div>
+      </div>
+      <button type="submit">Create Account</button>
+      <div class="login-link">
+        <p>Already have an account? <a href="/login">Login</a></p>
+      </div>
+    </form>
+    <div class="back-link">
+      <a href="/">&larr; Back to Home</a>
+    </div>
+  </main>
+  <footer>
+    <p>&copy; 2025 COMITALE. All rights reserved.</p>
+  </footer>
+  <script>
+    document.querySelector('.register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Reset error messages
+      document.querySelectorAll('.error-message').forEach(el => {
+        el.style.display = 'none';
+        el.textContent = '';
+      });
+      
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      // Simple validation
+      let isValid = true;
+      
+      if (username.length < 3) {
+        document.getElementById('username-error').textContent = 'Username must be at least 3 characters';
+        document.getElementById('username-error').style.display = 'block';
+        isValid = false;
+      }
+      
+      if (!email.includes('@')) {
+        document.getElementById('email-error').textContent = 'Please enter a valid email address';
+        document.getElementById('email-error').style.display = 'block';
+        isValid = false;
+      }
+      
+      if (password.length < 6) {
+        document.getElementById('password-error').textContent = 'Password must be at least 6 characters';
+        document.getElementById('password-error').style.display = 'block';
+        isValid = false;
+      }
+      
+      if (password !== confirmPassword) {
+        document.getElementById('confirmPassword-error').textContent = 'Passwords do not match';
+        document.getElementById('confirmPassword-error').style.display = 'block';
+        isValid = false;
+      }
+      
+      if (!isValid) return;
+      
+      try {
+        const response = await fetch('/api/users/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, email, password }),
+        });
+        
+        if (response.ok) {
+          alert('Registration successful! Please log in.');
+          window.location.href = '/login';
+        } else {
+          const data = await response.json();
+          if (data.message) {
+            alert(`Registration failed: ${data.message}`);
+          } else {
+            alert('Registration failed. Please try again.');
+          }
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        alert('Registration failed. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>

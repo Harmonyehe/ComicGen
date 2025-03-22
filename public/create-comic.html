@@ -1,0 +1,424 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Create Comic - COMITALE</title>
+      <style>
+        body {
+          font-family: 'Comic Sans MS', cursive, sans-serif;
+          background-color: #f8e6ff;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+        }
+        header {
+          background-color: #e951ff;
+          color: white;
+          padding: 1rem;
+          text-align: center;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+          position: relative;
+        }
+        .logo {
+          font-size: 2.5rem;
+          font-weight: bold;
+          text-shadow: 2px 2px 0 #000;
+        }
+        main {
+          flex: 1;
+          padding: 2rem;
+          max-width: 800px;
+          margin: 0 auto;
+        }
+        .create-form {
+          background-color: white;
+          border: 5px solid #000;
+          border-radius: 16px;
+          padding: 2rem;
+          margin-bottom: 2rem;
+          box-shadow: 8px 8px 0 #000;
+          position: relative;
+        }
+        .create-form h1 {
+          font-size: 2.5rem;
+          margin-bottom: 2rem;
+          color: #e951ff;
+          text-align: center;
+        }
+        .form-group {
+          margin-bottom: 1.5rem;
+        }
+        label {
+          display: block;
+          font-weight: bold;
+          margin-bottom: 0.5rem;
+          color: #333;
+        }
+        input, textarea, select {
+          width: 100%;
+          padding: 0.75rem;
+          font-size: 1rem;
+          border: 3px solid #000;
+          border-radius: 8px;
+          box-sizing: border-box;
+          font-family: inherit;
+        }
+        textarea {
+          min-height: 100px;
+          resize: vertical;
+        }
+        .format-options {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+          margin-top: 0.5rem;
+        }
+        .format-option {
+          border: 3px solid #000;
+          border-radius: 8px;
+          padding: 1rem;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        .format-option.selected {
+          background-color: #f8e6ff;
+          border-color: #e951ff;
+          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+        .format-option h3 {
+          margin-top: 0;
+          color: #e951ff;
+        }
+        .format-option .icon {
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+        }
+        .art-styles {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+          margin-top: 0.5rem;
+        }
+        .art-style {
+          border: 3px solid #000;
+          border-radius: 8px;
+          padding: 1rem;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        .art-style.selected {
+          background-color: #f8e6ff;
+          border-color: #e951ff;
+          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+        .art-style h4 {
+          margin-top: 0;
+          color: #e951ff;
+        }
+        button {
+          padding: 1rem 2rem;
+          background-color: #e951ff;
+          color: white;
+          font-size: 1.2rem;
+          border: 3px solid #000;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background-color 0.3s;
+          width: 100%;
+          font-weight: bold;
+          margin-top: 1rem;
+        }
+        button:hover {
+          background-color: #d33deb;
+        }
+        footer {
+          background-color: #333;
+          color: white;
+          text-align: center;
+          padding: 1rem;
+          margin-top: auto;
+        }
+        .nav-links {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+        }
+        .nav-links a {
+          display: inline-block;
+          margin-left: 1rem;
+          padding: 0.5rem 1rem;
+          background-color: white;
+          color: #e951ff;
+          text-decoration: none;
+          border: 2px solid #000;
+          border-radius: 4px;
+          font-weight: bold;
+          box-shadow: 2px 2px 0 #000;
+          transition: transform 0.2s;
+        }
+        .nav-links a:hover {
+          transform: translateY(-2px);
+          box-shadow: 3px 3px 0 #000;
+        }
+        .error-message {
+          color: #ff0000;
+          margin-top: 0.5rem;
+          font-size: 0.9rem;
+          display: none;
+        }
+        @media (max-width: 768px) {
+          .format-options, .art-styles {
+            grid-template-columns: 1fr;
+          }
+          .nav-links {
+            position: static;
+            margin-top: 1rem;
+            text-align: center;
+          }
+          .create-form h1 {
+            font-size: 2rem;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <header>
+        <div class="logo">COMITALE</div>
+        <div class="nav-links">
+          <a href="/">Home</a>
+          <a href="/login.html" id="loginLink">Login</a>
+          <span id="userControls" style="display: none;">
+            <a href="/api/users/logout" id="logoutLink">Logout</a>
+          </span>
+        </div>
+      </header>
+      <main>
+        <form class="create-form">
+          <h1>Create Your Comic</h1>
+          <div class="form-group">
+            <label for="title">Comic Title</label>
+            <input type="text" id="title" name="title" required placeholder="Enter a title for your comic">
+            <div id="title-error" class="error-message"></div>
+          </div>
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" placeholder="Describe your comic (optional)"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Comic Format</label>
+            <input type="hidden" id="format" name="format" value="">
+            <div class="format-options">
+              <div class="format-option" data-format="webtoon">
+                <div class="icon">📱</div>
+                <h3>Webtoon</h3>
+                <p>Vertical scrolling format perfect for mobile reading</p>
+              </div>
+              <div class="format-option" data-format="manga">
+                <div class="icon">📖</div>
+                <h3>Manga</h3>
+                <p>Right-to-left reading traditional manga style</p>
+              </div>
+              <div class="format-option" data-format="instagram">
+                <div class="icon">📷</div>
+                <h3>Instagram</h3>
+                <p>Square format perfect for social media sharing</p>
+              </div>
+              <div class="format-option" data-format="classic">
+                <div class="icon">🦸</div>
+                <h3>Classic</h3>
+                <p>Traditional comic book style with panels</p>
+              </div>
+            </div>
+            <div id="format-error" class="error-message"></div>
+          </div>
+          <div class="form-group">
+            <label>Art Style</label>
+            <input type="hidden" id="artStyle" name="artStyle" value="">
+            <div class="art-styles">
+              <div class="art-style" data-style="cartoon">
+                <h4>Cartoon</h4>
+                <p>Classic cartoon style</p>
+              </div>
+              <div class="art-style" data-style="anime">
+                <h4>Anime</h4>
+                <p>Japanese anime style</p>
+              </div>
+              <div class="art-style" data-style="realistic">
+                <h4>Realistic</h4>
+                <p>More detailed realistic art</p>
+              </div>
+              <div class="art-style" data-style="comic">
+                <h4>Comic</h4>
+                <p>Classic comic book style</p>
+              </div>
+              <div class="art-style" data-style="minimalist">
+                <h4>Minimalist</h4>
+                <p>Simple line art style</p>
+              </div>
+              <div class="art-style" data-style="retro">
+                <h4>Retro</h4>
+                <p>Vintage comic aesthetic</p>
+              </div>
+            </div>
+            <div id="artStyle-error" class="error-message"></div>
+          </div>
+          <button type="submit">Create Comic</button>
+        </form>
+      </main>
+      <footer>
+        <p>&copy; 2025 COMITALE. All rights reserved.</p>
+      </footer>
+      <script>
+        // Check authentication status on page load
+        checkAuthStatus();
+        
+        async function checkAuthStatus() {
+          try {
+            const response = await fetch('/api/users/me');
+            if (response.ok) {
+              // User is logged in
+              document.getElementById('loginLink').style.display = 'none';
+              document.getElementById('userControls').style.display = 'inline-block';
+            } else {
+              // User is not logged in, redirect to login
+              alert('Please log in to create a comic');
+              window.location.href = '/login.html';
+            }
+          } catch (error) {
+            console.error('Auth check error:', error);
+          }
+        }
+        
+        // Handle format selection
+        document.querySelectorAll('.format-option').forEach(option => {
+          option.addEventListener('click', function() {
+            // Remove selected class from all options
+            document.querySelectorAll('.format-option').forEach(el => {
+              el.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked option
+            this.classList.add('selected');
+            
+            // Update hidden input value
+            document.getElementById('format').value = this.dataset.format;
+            
+            // Clear error message if any
+            document.getElementById('format-error').style.display = 'none';
+          });
+        });
+        
+        // Handle art style selection
+        document.querySelectorAll('.art-style').forEach(style => {
+          style.addEventListener('click', function() {
+            // Remove selected class from all styles
+            document.querySelectorAll('.art-style').forEach(el => {
+              el.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked style
+            this.classList.add('selected');
+            
+            // Update hidden input value
+            document.getElementById('artStyle').value = this.dataset.style;
+            
+            // Clear error message if any
+            document.getElementById('artStyle-error').style.display = 'none';
+          });
+        });
+        
+        // Handle logout
+        document.getElementById('logoutLink').addEventListener('click', async function(e) {
+          e.preventDefault();
+          
+          try {
+            const response = await fetch('/api/users/logout', {
+              method: 'POST'
+            });
+            
+            if (response.ok) {
+              alert('Logged out successfully');
+              window.location.href = '/';
+            }
+          } catch (error) {
+            console.error('Logout error:', error);
+          }
+        });
+        
+        // Handle form submission
+        document.querySelector('.create-form').addEventListener('submit', async function(e) {
+          e.preventDefault();
+          
+          // Reset error messages
+          document.querySelectorAll('.error-message').forEach(el => {
+            el.style.display = 'none';
+            el.textContent = '';
+          });
+          
+          // Get form values
+          const title = document.getElementById('title').value;
+          const description = document.getElementById('description').value;
+          const format = document.getElementById('format').value;
+          const artStyle = document.getElementById('artStyle').value;
+          
+          // Validate
+          let isValid = true;
+          
+          if (!title.trim()) {
+            document.getElementById('title-error').textContent = 'Please enter a title';
+            document.getElementById('title-error').style.display = 'block';
+            isValid = false;
+          }
+          
+          if (!format) {
+            document.getElementById('format-error').textContent = 'Please select a format';
+            document.getElementById('format-error').style.display = 'block';
+            isValid = false;
+          }
+          
+          if (!artStyle) {
+            document.getElementById('artStyle-error').textContent = 'Please select an art style';
+            document.getElementById('artStyle-error').style.display = 'block';
+            isValid = false;
+          }
+          
+          if (!isValid) return;
+          
+          try {
+            const response = await fetch('/api/comics', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                title,
+                description,
+                format,
+                artStyle
+              })
+            });
+            
+            if (response.ok) {
+              const comic = await response.json();
+              alert('Comic created successfully!');
+              // In a real app, we would redirect to the comic editor page with the ID
+              window.location.href = '/';
+            } else {
+              const data = await response.json();
+              alert(`Failed to create comic: ${data.error || 'Unknown error'}`);
+            }
+          } catch (error) {
+            console.error('Create comic error:', error);
+            alert('Failed to create comic. Please try again.');
+          }
+        });
+      </script>
+    </body>
+    </html>
+    
