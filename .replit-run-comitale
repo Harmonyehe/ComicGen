@@ -1,3 +1,5 @@
-run = "npm run dev"
-language = "nodejs"
-onBoot = "npm install"
+#!/bin/bash
+
+# This script is used to run the COMITALE application
+# Run database migrations and then start the server
+./start_comitale.sh

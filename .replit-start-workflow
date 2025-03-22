@@ -1,2 +1,1 @@
-run = "npm run dev"
-language = "nodejs"
+run = "./start_app.sh"

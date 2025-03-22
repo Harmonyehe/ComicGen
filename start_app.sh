@@ -11,6 +11,10 @@ killall node 2>/dev/null
 echo "Checking dependencies..."
 npm install --silent
 
+# Run database migrations
+echo "Running database migrations..."
+npx tsx server/db-migrate.ts
+
 # Start the server with TypeScript support
 echo "Starting COMITALE Comic Creator..."
 echo "Server will be available at http://localhost:3000"

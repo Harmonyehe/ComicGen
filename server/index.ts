@@ -42,16 +42,16 @@ createRoutes(app, storage);
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Serve the SPA for any other routes
-app.get('*', (req, res) => {
+app.get('*', (_, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_, res) => {
   res.status(200).send('OK');
 });
 
 // Start the server
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
