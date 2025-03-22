@@ -146,6 +146,7 @@
     "jiti": "^1.21.6",
     "js-tokens": "^4.0.0",
     "jsesc": "^3.0.2",
+    "json": "^11.0.0",
     "json5": "^2.2.3",
     "lilconfig": "^2.1.0",
     "lines-and-columns": "^1.2.4",
@@ -317,7 +318,8 @@
     "zod-validation-error": "^3.4.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx --watch server/index.ts"
   },
   "keywords": [],
   "author": "",
