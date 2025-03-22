@@ -1,2 +1,2 @@
-run = "chmod +x start_app.sh && ./start_app.sh"
+run = "npm run dev"
 language = "nodejs"

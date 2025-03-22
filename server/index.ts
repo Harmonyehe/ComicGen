@@ -1,33 +1,57 @@
-import express from "express";
-import session from "express-session";
-import { createRoutes } from "./routes";
-import { MemStorage } from "./storage";
+import express from 'express';
+import session from 'express-session';
+import path from 'path';
+import { createRoutes } from './routes';
+import { DrizzleStorage } from './drizzle-storage';
+import connectPgSimple from 'connect-pg-simple';
 
-// Create Express app
+// Set up Express app
 const app = express();
-const PORT = parseInt(process.env.PORT || "3000", 10);
+const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Parse JSON body
 app.use(express.json());
+
+// Session configuration
+const PgSession = connectPgSimple(session);
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "comic-creator-secret",
+    store: new PgSession({
+      conString: process.env.DATABASE_URL,
+      tableName: 'session', // Default table name
+      createTableIfMissing: true
+    }),
+    secret: process.env.SESSION_SECRET || 'comitale-secret-key',
     resave: false,
     saveUninitialized: false,
-    cookie: { 
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     },
   })
 );
 
-// Storage initialization
-const storage = new MemStorage();
+// Set up the storage
+const storage = new DrizzleStorage();
 
-// Routes
+// Create and mount API routes
 createRoutes(app, storage);
 
-// Start server
-app.listen(PORT, "0.0.0.0", () => {
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Serve the SPA for any other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+// Start the server
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
