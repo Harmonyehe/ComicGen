@@ -1,0 +1,122 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Import comic fonts */
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Boogaloo&family=Comic+Neue:wght@400;700&display=swap');
+
+:root {
+  /* Use theme colors from theme.json */
+  --comic-title-font: 'Bangers', cursive;
+  --comic-subtitle-font: 'Boogaloo', cursive;
+  --comic-body-font: 'Comic Neue', sans-serif;
+}
+
+body {
+  font-family: var(--comic-body-font);
+  background-color: #f9f4ff; /* Light purple background */
+  background-image: 
+    radial-gradient(#e3d2ff 1px, transparent 1px),
+    radial-gradient(#e3d2ff 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+}
+
+/* Comic style elements */
+.comic-title {
+  font-family: var(--comic-title-font);
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 0 #fff, 3px 3px 0 rgba(0, 0, 0, 0.2);
+  transform: rotate(-1deg);
+}
+
+.comic-subtitle {
+  font-family: var(--comic-subtitle-font);
+}
+
+/* Comic panel styling */
+.comic-panel {
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.comic-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, 
+    hsl(var(--primary)) 0%, 
+    hsl(var(--primary)) 40%, 
+    hsl(var(--primary)/60%) 70%, 
+    hsl(var(--primary)) 100%);
+}
+
+/* Action button styling */
+.action-btn {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+  transform-origin: center;
+  font-family: var(--comic-subtitle-font);
+  letter-spacing: 0.5px;
+  font-size: 1.05em;
+}
+
+.action-btn:hover {
+  transform: scale(1.05);
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+}
+
+/* Comic frame (for editor) */
+.comic-frame {
+  border: 3px solid #000;
+  box-shadow: 
+    0 0 0 2px #fff,
+    0 0 0 5px #000,
+    5px 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .comic-title {
+    font-size: 2.5rem;
+  }
+}
+
+/* Comic search bar style */
+.comic-search {
+  border-width: 3px;
+  font-family: var(--comic-body-font);
+  font-size: 1.1rem;
+}
+
+.comic-input {
+  font-family: var(--comic-body-font);
+}
+
+/* Animation for comic elements */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.pop-in {
+  animation: popIn 0.4s ease-out forwards;
+}
