@@ -1,122 +1,297 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Import comic fonts */
-@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Boogaloo&family=Comic+Neue:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap');
 
 :root {
-  /* Use theme colors from theme.json */
-  --comic-title-font: 'Bangers', cursive;
-  --comic-subtitle-font: 'Boogaloo', cursive;
-  --comic-body-font: 'Comic Neue', sans-serif;
+  --comic-yellow: #fcf76c;
+  --comic-blue: #4c95d8;
+  --comic-red: #e94e77;
+  --comic-orange: #ff9e4a;
+  --comic-green: #43d97b;
+  --comic-dark: #272735;
+  --comic-shadow: rgba(0, 0, 0, 0.35);
 }
 
+/* Base styles */
 body {
-  font-family: var(--comic-body-font);
-  background-color: #f9f4ff; /* Light purple background */
-  background-image: 
-    radial-gradient(#e3d2ff 1px, transparent 1px),
-    radial-gradient(#e3d2ff 1px, transparent 1px);
-  background-size: 20px 20px;
-  background-position: 0 0, 10px 10px;
+  background-color: #f4f1e8;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ddd8c7' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+  font-family: 'Comic Neue', sans-serif;
+  color: var(--comic-dark);
 }
 
-/* Comic style elements */
 .comic-title {
-  font-family: var(--comic-title-font);
-  letter-spacing: 1px;
-  text-shadow: 2px 2px 0 #fff, 3px 3px 0 rgba(0, 0, 0, 0.2);
+  font-family: 'Bangers', cursive;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--comic-red);
+  text-shadow: 3px 3px 0 var(--comic-shadow);
   transform: rotate(-1deg);
 }
 
 .comic-subtitle {
-  font-family: var(--comic-subtitle-font);
+  font-family: 'Bangers', cursive;
+  letter-spacing: 1px;
 }
 
 /* Comic panel styling */
 .comic-panel {
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   position: relative;
-  overflow: hidden;
+  border: 3px solid var(--comic-dark);
+  background-color: white;
+  box-shadow: 6px 6px 0 var(--comic-shadow);
+  transition: all 0.2s ease;
+  transform: rotate(0.5deg);
 }
 
-.comic-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: linear-gradient(90deg, 
-    hsl(var(--primary)) 0%, 
-    hsl(var(--primary)) 40%, 
-    hsl(var(--primary)/60%) 70%, 
-    hsl(var(--primary)) 100%);
+.comic-panel:hover {
+  transform: translateY(-5px) rotate(0.5deg);
+  box-shadow: 8px 8px 0 var(--comic-shadow);
 }
 
-/* Action button styling */
+/* Buttons and interactive elements */
 .action-btn {
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease;
-  transform-origin: center;
-  font-family: var(--comic-subtitle-font);
-  letter-spacing: 0.5px;
-  font-size: 1.05em;
+  font-family: 'Bangers', cursive;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transform: rotate(-1deg);
+  transition: all 0.2s ease;
+  box-shadow: 4px 4px 0 var(--comic-shadow);
 }
 
 .action-btn:hover {
-  transform: scale(1.05);
+  transform: translateY(-3px) rotate(-1deg);
+  box-shadow: 6px 6px 0 var(--comic-shadow);
 }
 
-.action-btn:active {
-  transform: scale(0.98);
-}
-
-/* Comic frame (for editor) */
-.comic-frame {
-  border: 3px solid #000;
-  box-shadow: 
-    0 0 0 2px #fff,
-    0 0 0 5px #000,
-    5px 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .comic-title {
-    font-size: 2.5rem;
-  }
-}
-
-/* Comic search bar style */
+/* Comic search bar */
 .comic-search {
-  border-width: 3px;
-  font-family: var(--comic-body-font);
-  font-size: 1.1rem;
+  border: 3px solid var(--comic-dark);
+  background-color: white;
+  box-shadow: 4px 4px 0 var(--comic-shadow);
+  transition: all 0.2s ease;
 }
 
-.comic-input {
-  font-family: var(--comic-body-font);
+.comic-search:focus {
+  box-shadow: 6px 6px 0 var(--comic-shadow);
+  transform: translateY(-2px);
 }
 
-/* Animation for comic elements */
-@keyframes popIn {
+/* Comic burst effect for highlights */
+.comic-burst {
+  position: absolute;
+  background-color: var(--comic-yellow);
+  color: var(--comic-dark);
+  padding: 10px 20px;
+  font-family: 'Bangers', cursive;
+  letter-spacing: 1px;
+  font-size: 1.25rem;
+  transform: rotate(-5deg);
+  box-shadow: 3px 3px 0 var(--comic-shadow);
+  z-index: 10;
+  top: -15px;
+  right: -10px;
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% 75%, 75% 75%, 75% 100%, 50% 75%, 0% 75%
+  );
+}
+
+/* Animation effects */
+@keyframes pop-in {
   0% {
     opacity: 0;
-    transform: scale(0.8);
+    transform: scale(0.8) rotate(0.5deg);
   }
-  70% {
-    transform: scale(1.05);
+  60% {
+    transform: scale(1.05) rotate(0.5deg);
   }
   100% {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) rotate(0.5deg);
   }
 }
 
 .pop-in {
-  animation: popIn 0.4s ease-out forwards;
+  animation: pop-in 0.5s forwards;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(-1deg);
+  }
+}
+
+.float {
+  animation: float 5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Custom header for site navbar */
+header {
+  background-color: white;
+  border-bottom: 3px solid var(--comic-dark);
+  box-shadow: 0 4px 0 var(--comic-shadow);
+}
+
+/* Sound effect style */
+.sound-effect {
+  position: absolute;
+  font-family: 'Bangers', cursive;
+  font-size: 2rem;
+  color: var(--comic-dark);
+  background-color: var(--comic-yellow);
+  padding: 10px 15px;
+  border-radius: 50%;
+  transform: rotate(-5deg);
+  box-shadow: 3px 3px 0 var(--comic-shadow);
+  z-index: 10;
+  letter-spacing: 1px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.action-btn:hover .sound-effect {
+  opacity: 1;
+}
+
+/* Half-tone dot pattern background for section dividers */
+.halftone-divider {
+  height: 50px;
+  background-image: radial-gradient(var(--comic-dark) 1px, transparent 1px);
+  background-size: 10px 10px;
+  margin: 2rem 0;
+}
+
+/* Comic style tabs */
+.comic-tabs {
+  border: 3px solid var(--comic-dark);
+  border-radius: 5px 5px 0 0;
+  overflow: hidden;
+}
+
+.comic-tab {
+  font-family: 'Bangers', cursive;
+  letter-spacing: 1px;
+  background-color: white;
+  color: var(--comic-dark);
+  padding: 10px 20px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.comic-tab[data-state="active"] {
+  background-color: var(--comic-blue);
+  color: white;
+  box-shadow: inset 0 -3px 0 var(--comic-dark);
+}
+
+.comic-tab-content {
+  background-color: white;
+  border: 3px solid var(--comic-dark);
+  border-top: none;
+  box-shadow: 6px 6px 0 var(--comic-shadow);
+}
+
+/* Color utilities for comic elements */
+.bg-comic-yellow {
+  background-color: var(--comic-yellow);
+}
+
+.bg-comic-blue {
+  background-color: var(--comic-blue);
+}
+
+.bg-comic-red {
+  background-color: var(--comic-red);
+}
+
+.bg-comic-orange {
+  background-color: var(--comic-orange);
+}
+
+.bg-comic-green {
+  background-color: var(--comic-green);
+}
+
+.text-comic-dark {
+  color: var(--comic-dark);
+}
+
+/* Special effect: torn paper edge */
+.torn-edge {
+  position: relative;
+}
+
+.torn-edge::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 1000 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,0 C200,100 300,0 500,100 C700,0 800,100 1000,0 L1000,100 L0,100 Z' fill='%23ffffff'/%3E%3C/svg%3E");
+  background-size: cover;
+}
+
+/* Comic grid layout */
+.comic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+/* Dialogue bubble */
+.dialogue-bubble {
+  position: relative;
+  background: white;
+  border: 3px solid var(--comic-dark);
+  border-radius: 20px;
+  padding: 15px;
+  margin-bottom: 30px;
+  box-shadow: 4px 4px 0 var(--comic-shadow);
+}
+
+.dialogue-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -20px;
+  left: 30px;
+  border-width: 20px 0 0 20px;
+  border-style: solid;
+  border-color: var(--comic-dark) transparent transparent transparent;
+  display: block;
+  width: 0;
+}
+
+.dialogue-bubble::before {
+  content: "";
+  position: absolute;
+  bottom: -15px;
+  left: 33px;
+  border-width: 17px 0 0 17px;
+  border-style: solid;
+  border-color: white transparent transparent transparent;
+  display: block;
+  width: 0;
+  z-index: 1;
 }

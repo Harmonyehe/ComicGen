@@ -65,20 +65,28 @@ export const Navbar = () => {
   ];
   
   return (
-    <header className="border-b bg-white sticky top-0 z-50">
+    <header className="sticky top-0 z-50 border-b-3 border-comic-dark bg-white">
+      <div className="absolute top-0 left-0 w-full h-1 bg-comic-yellow"></div>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <a 
             href="/" 
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-2 group"
             onClick={(e) => {
               e.preventDefault();
               navigate("/");
             }}
           >
-            <BookOpen className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold comic-subtitle">Comic Creator</span>
+            <div className="relative">
+              <BookOpen className="h-7 w-7 text-comic-red" />
+              <div className="absolute -top-8 -right-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="sound-effect bg-comic-yellow text-sm">
+                  ZOOM!
+                </div>
+              </div>
+            </div>
+            <span className="text-2xl font-bold comic-subtitle text-comic-red transform -rotate-1">COMITALE</span>
           </a>
           
           {/* Desktop Navigation */}
@@ -87,10 +95,10 @@ export const Navbar = () => {
               <a
                 key={index}
                 href={item.href}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                className={`px-3 py-2 text-base font-medium comic-subtitle rounded-md transform ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'} ${
                   location === item.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    ? "bg-comic-blue text-white"
+                    : "hover:bg-comic-blue/10 hover:text-comic-blue"
                 }`}
                 onClick={(e) => {
                   e.preventDefault();
@@ -104,15 +112,15 @@ export const Navbar = () => {
             {/* Auth Buttons */}
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                <div className="text-sm font-medium">
-                  <span className="text-muted-foreground mr-2">Hi,</span>
-                  {user?.username}
+                <div className="dialogue-bubble py-1 px-3 my-0 text-sm font-medium">
+                  <span className="mr-1">Hi,</span>
+                  <span className="font-bold comic-subtitle">{user?.username}</span>
                 </div>
                 <Button
                   onClick={handleLogout}
                   variant="outline"
                   size="sm"
-                  className="flex items-center"
+                  className="border-2 border-comic-dark text-comic-dark hover:bg-comic-dark/5 action-btn"
                   disabled={logoutMutation.isPending}
                 >
                   <LogOut className="h-4 w-4 mr-1" />
@@ -120,11 +128,12 @@ export const Navbar = () => {
                 </Button>
               </div>
             ) : (
-              <div className="flex space-x-2">
+              <div className="flex space-x-3">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate("/login")}
+                  className="border-2 border-comic-blue text-comic-blue hover:bg-comic-blue/10 action-btn"
                 >
                   <LogIn className="h-4 w-4 mr-1" />
                   Login
@@ -132,6 +141,7 @@ export const Navbar = () => {
                 <Button 
                   size="sm"
                   onClick={() => navigate("/register")}
+                  className="bg-comic-red hover:bg-comic-red/90 border-2 border-comic-dark action-btn"
                 >
                   <User className="h-4 w-4 mr-1" />
                   Register
@@ -142,7 +152,7 @@ export const Navbar = () => {
           
           {/* Mobile Menu Button */}
           <button 
-            className="md:hidden text-gray-600"
+            className="md:hidden text-comic-dark border-2 border-comic-dark rounded-md p-1"
             onClick={toggleMenu}
             aria-label="Toggle menu"
           >
@@ -157,16 +167,16 @@ export const Navbar = () => {
       
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-t">
+        <div className="md:hidden bg-white border-t border-comic-dark">
           <div className="container mx-auto px-4 py-3 space-y-2">
             {navItems.map((item, index) => (
               <a
                 key={index}
                 href={item.href}
-                className={`block px-3 py-2 rounded-md ${
+                className={`block px-3 py-2 rounded-md comic-subtitle ${
                   location === item.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground"
+                    ? "bg-comic-blue text-white"
+                    : "text-comic-dark hover:bg-comic-blue/10"
                 }`}
                 onClick={(e) => {
                   e.preventDefault();
@@ -179,16 +189,16 @@ export const Navbar = () => {
             
             {/* Auth Buttons */}
             {isAuthenticated ? (
-              <div className="space-y-2 border-t pt-2 mt-2">
-                <div className="px-3 py-2 text-sm font-medium">
-                  <span className="text-muted-foreground mr-1">Logged in as</span>
-                  {user?.username}
+              <div className="space-y-2 border-t border-dashed border-comic-dark/30 pt-2 mt-2">
+                <div className="px-3 py-2 text-sm font-medium dialogue-bubble my-0">
+                  <span className="mr-1">Logged in as</span>
+                  <span className="font-bold comic-subtitle">{user?.username}</span>
                 </div>
                 <Button
                   onClick={handleLogout}
                   variant="outline"
                   size="sm"
-                  className="w-full justify-center"
+                  className="w-full justify-center border-2 border-comic-dark text-comic-dark hover:bg-comic-dark/5 action-btn"
                   disabled={logoutMutation.isPending}
                 >
                   <LogOut className="h-4 w-4 mr-1" />
@@ -196,12 +206,12 @@ export const Navbar = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 border-t pt-2 mt-2">
+              <div className="grid grid-cols-2 gap-2 border-t border-dashed border-comic-dark/30 pt-2 mt-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate("/login")}
-                  className="justify-center"
+                  className="justify-center border-2 border-comic-blue text-comic-blue hover:bg-comic-blue/10 action-btn"
                 >
                   <LogIn className="h-4 w-4 mr-1" />
                   Login
@@ -209,7 +219,7 @@ export const Navbar = () => {
                 <Button 
                   size="sm"
                   onClick={() => navigate("/register")}
-                  className="justify-center"
+                  className="justify-center bg-comic-red hover:bg-comic-red/90 border-2 border-comic-dark action-btn"
                 >
                   <User className="h-4 w-4 mr-1" />
                   Register
