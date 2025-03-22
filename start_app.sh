@@ -11,9 +11,9 @@ killall node 2>/dev/null
 echo "Checking dependencies..."
 npm install --silent
 
-# Start the server
+# Start the server with TypeScript support
 echo "Starting COMITALE Comic Creator..."
 echo "Server will be available at http://localhost:3000"
-node run.js
+npx tsx server/index.ts
 
 # This script will keep running as long as the server is running

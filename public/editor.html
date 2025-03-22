@@ -145,12 +145,36 @@
           border: 2px solid #000;
           border-radius: 4px;
           text-align: center;
-          cursor: pointer;
+          cursor: grab;
           transition: all 0.2s;
+          position: relative;
+        }
+        .tool-button.dragging {
+          opacity: 0.5;
+          border-style: dashed;
+          box-shadow: 0 0 8px rgba(233, 81, 255, 0.6);
         }
         .tool-button:hover {
           background-color: #f8e6ff;
           transform: translateY(-2px);
+        }
+        .tool-button::after {
+          content: "Drag me!";
+          position: absolute;
+          opacity: 0;
+          background-color: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 3px 6px;
+          border-radius: 4px;
+          font-size: 12px;
+          pointer-events: none;
+          transition: opacity 0.3s;
+          right: 0;
+          top: 110%;
+          white-space: nowrap;
+        }
+        .tool-button:hover::after {
+          opacity: 1;
         }
         .comic-page {
           background-color: white;
@@ -158,6 +182,11 @@
           box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
           margin-bottom: 2rem;
           position: relative;
+          transition: background-color 0.2s;
+        }
+        .comic-page.dragover {
+          background-color: #f8e6ff;
+          box-shadow: 0 0 15px #e951ff;
         }
         .comic-panel {
           position: absolute;
@@ -180,6 +209,12 @@
             rgba(255, 255, 255, 0.05) 20px
           );
           pointer-events: none;
+        }
+        
+        .comic-panel.selected, .character-item.selected, .speech-bubble.selected {
+          outline: 3px dashed #e951ff;
+          box-shadow: 0 0 10px rgba(233, 81, 255, 0.5);
+          z-index: 10;
         }
         .character-item {
           position: absolute;
@@ -322,10 +357,13 @@
           </div>
           <div class="editor-content">
             <div class="editor-workspace">
-              <div class="page-preview">
-                <h2>Comic Editor - Coming Soon!</h2>
-                <p>The editor is under development. Check back later for updates!</p>
-                <p>This is a placeholder for the comic editor interface.</p>
+              <div id="comic-page" class="comic-page" style="width: 800px; height: 1000px; position: relative;">
+                <!-- Comic panels and elements will be added here dynamically -->
+              </div>
+              <div class="page-controls">
+                <button class="page-control" id="prev-page">Previous Page</button>
+                <span id="page-indicator">Page 1</span>
+                <button class="page-control" id="next-page">Next Page</button>
               </div>
             </div>
             <div class="editor-tools">
@@ -338,20 +376,26 @@
                   <div class="tool-button" id="add-caption">Caption</div>
                 </div>
               </div>
+              <div class="tool-section" id="character-section" style="display: none;">
+                <h3>Characters</h3>
+                <div id="character-list">
+                  <!-- Characters will be listed here -->
+                </div>
+                <button class="editor-control" id="add-new-character" style="margin-top: 10px;">Add New Character</button>
+              </div>
               <div class="tool-section">
-                <h3>Style</h3>
+                <h3>Panel Layout</h3>
                 <div class="tool-grid">
-                  <div class="tool-button" id="style-bold">Bold</div>
-                  <div class="tool-button" id="style-italic">Italic</div>
-                  <div class="tool-button" id="style-font">Font</div>
-                  <div class="tool-button" id="style-color">Color</div>
+                  <div class="tool-button" id="layout-1">1 Panel</div>
+                  <div class="tool-button" id="layout-2">2 Panels</div>
+                  <div class="tool-button" id="layout-3">3 Panels</div>
+                  <div class="tool-button" id="layout-4">4 Panels</div>
                 </div>
               </div>
               <div class="tool-section">
-                <h3>Layout</h3>
-                <div class="tool-grid">
-                  <div class="tool-button" id="layout-grid">Grid</div>
-                  <div class="tool-button" id="layout-align">Align</div>
+                <h3>Selected Element</h3>
+                <div id="element-properties">
+                  <p>No element selected</p>
                 </div>
               </div>
             </div>
@@ -364,6 +408,26 @@
       <script>
         // Check authentication status on page load
         checkAuthStatus();
+        
+        // Global variables
+        let currentPage = 1;
+        let comicData = {
+          title: 'Comic Editor',
+          format: 'classic',
+          pages: [{
+            pageNumber: 1,
+            panels: [],
+            characters: [],
+            dialogues: []
+          }]
+        };
+        let selectedElement = null;
+        let characters = [];
+        let isDragging = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        let currentPageData = comicData.pages[0];
+        let nextElementId = 1;
         
         async function checkAuthStatus() {
           try {
@@ -385,10 +449,549 @@
         if (!comicId) {
           alert('No comic ID provided');
           window.location.href = '/comics.html';
+        } else {
+          loadComicData(comicId);
         }
         
-        // Load comic data (placeholder functionality for now)
-        document.getElementById('comic-title').textContent = 'Comic Editor (Preview)';
+        // Load comic data from the server
+        async function loadComicData(id) {
+          try {
+            const response = await fetch(`/api/comics/${id}`);
+            if (response.ok) {
+              const comic = await response.json();
+              document.getElementById('comic-title').textContent = comic.title;
+              comicData.title = comic.title;
+              comicData.format = comic.format;
+              
+              // Load comic pages
+              const pagesResponse = await fetch(`/api/comics/${id}/pages`);
+              if (pagesResponse.ok) {
+                const pages = await pagesResponse.json();
+                if (pages.length > 0) {
+                  comicData.pages = pages.map(page => {
+                    return {
+                      id: page.id,
+                      pageNumber: page.pageNumber,
+                      ...JSON.parse(page.content)
+                    };
+                  }).sort((a, b) => a.pageNumber - b.pageNumber);
+                }
+              }
+              
+              // Load characters
+              const charactersResponse = await fetch(`/api/comics/${id}/characters`);
+              if (charactersResponse.ok) {
+                characters = await charactersResponse.json();
+                updateCharacterList();
+              }
+              
+              // Initialize the first page
+              if (comicData.pages.length > 0) {
+                currentPageData = comicData.pages[0];
+                renderCurrentPage();
+              }
+            } else {
+              console.error('Failed to load comic data');
+            }
+          } catch (error) {
+            console.error('Error loading comic data:', error);
+          }
+        }
+        
+        // Render the current page
+        function renderCurrentPage() {
+          const pageElement = document.getElementById('comic-page');
+          pageElement.innerHTML = '';
+          document.getElementById('page-indicator').textContent = `Page ${currentPage}`;
+          
+          // Set page size based on comic format
+          switch (comicData.format) {
+            case 'webtoon':
+              pageElement.style.width = '600px';
+              pageElement.style.height = '1500px';
+              break;
+            case 'manga':
+              pageElement.style.width = '700px';
+              pageElement.style.height = '1000px';
+              break;
+            case 'instagram':
+              pageElement.style.width = '600px';
+              pageElement.style.height = '600px';
+              break;
+            default: // classic
+              pageElement.style.width = '800px';
+              pageElement.style.height = '1000px';
+          }
+          
+          // Render panels
+          if (currentPageData.panels) {
+            currentPageData.panels.forEach(panel => {
+              createPanelElement(panel);
+            });
+          }
+          
+          // Render characters
+          if (currentPageData.characters) {
+            currentPageData.characters.forEach(charPlacement => {
+              const character = characters.find(c => c.id === charPlacement.characterId);
+              if (character) {
+                createCharacterElement(charPlacement, character);
+              }
+            });
+          }
+          
+          // Render dialogues
+          if (currentPageData.dialogues) {
+            currentPageData.dialogues.forEach(dialogue => {
+              createDialogueElement(dialogue);
+            });
+          }
+        }
+        
+        // Create a panel element
+        function createPanelElement(panel) {
+          const panelElement = document.createElement('div');
+          panelElement.className = 'comic-panel';
+          panelElement.dataset.id = panel.id;
+          panelElement.dataset.type = 'panel';
+          panelElement.style.left = panel.x + 'px';
+          panelElement.style.top = panel.y + 'px';
+          panelElement.style.width = panel.width + 'px';
+          panelElement.style.height = panel.height + 'px';
+          
+          if (panel.rotation) {
+            panelElement.style.transform = `rotate(${panel.rotation}deg)`;
+          }
+          
+          panelElement.addEventListener('mousedown', startDrag);
+          panelElement.addEventListener('click', selectElement);
+          
+          document.getElementById('comic-page').appendChild(panelElement);
+        }
+        
+        // Create a character element
+        function createCharacterElement(placement, character) {
+          const charElement = document.createElement('div');
+          charElement.className = 'character-item';
+          charElement.dataset.id = placement.id;
+          charElement.dataset.characterId = character.id;
+          charElement.dataset.type = 'character';
+          charElement.style.left = placement.x + 'px';
+          charElement.style.top = placement.y + 'px';
+          
+          if (character.imageUrl) {
+            const img = document.createElement('img');
+            img.src = character.imageUrl;
+            img.alt = character.name;
+            img.style.maxHeight = '180px';
+            charElement.appendChild(img);
+          } else {
+            // Create a placeholder for the character
+            const placeholder = document.createElement('div');
+            placeholder.className = 'character-placeholder';
+            placeholder.textContent = character.name.substring(0, 2).toUpperCase();
+            charElement.appendChild(placeholder);
+          }
+          
+          charElement.addEventListener('mousedown', startDrag);
+          charElement.addEventListener('click', selectElement);
+          
+          document.getElementById('comic-page').appendChild(charElement);
+        }
+        
+        // Create a dialogue/speech bubble element
+        function createDialogueElement(dialogue) {
+          const bubbleElement = document.createElement('div');
+          bubbleElement.className = 'speech-bubble';
+          bubbleElement.dataset.id = dialogue.id;
+          bubbleElement.dataset.type = 'dialogue';
+          bubbleElement.style.left = dialogue.x + 'px';
+          bubbleElement.style.top = dialogue.y + 'px';
+          bubbleElement.textContent = dialogue.text;
+          
+          bubbleElement.addEventListener('mousedown', startDrag);
+          bubbleElement.addEventListener('click', selectElement);
+          
+          document.getElementById('comic-page').appendChild(bubbleElement);
+        }
+        
+        // Start dragging an element
+        function startDrag(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          selectElement(e);
+          
+          const element = e.currentTarget;
+          isDragging = true;
+          
+          // Calculate the offset of the mouse pointer relative to the element
+          const rect = element.getBoundingClientRect();
+          dragOffsetX = e.clientX - rect.left;
+          dragOffsetY = e.clientY - rect.top;
+          
+          // Add global mouse move and up handlers
+          document.addEventListener('mousemove', dragElement);
+          document.addEventListener('mouseup', stopDrag);
+        }
+        
+        // Drag the element
+        function dragElement(e) {
+          if (isDragging && selectedElement) {
+            e.preventDefault();
+            
+            // Get page position
+            const pageRect = document.getElementById('comic-page').getBoundingClientRect();
+            
+            // Calculate new position
+            let x = e.clientX - pageRect.left - dragOffsetX;
+            let y = e.clientY - pageRect.top - dragOffsetY;
+            
+            // Constrain to page boundaries
+            x = Math.max(0, Math.min(x, pageRect.width - selectedElement.offsetWidth));
+            y = Math.max(0, Math.min(y, pageRect.height - selectedElement.offsetHeight));
+            
+            // Update element position
+            selectedElement.style.left = x + 'px';
+            selectedElement.style.top = y + 'px';
+            
+            // Update data model
+            const type = selectedElement.dataset.type;
+            const id = selectedElement.dataset.id;
+            
+            if (type === 'panel') {
+              const panelIndex = currentPageData.panels.findIndex(p => p.id === id);
+              if (panelIndex !== -1) {
+                currentPageData.panels[panelIndex].x = x;
+                currentPageData.panels[panelIndex].y = y;
+              }
+            } else if (type === 'character') {
+              const charIndex = currentPageData.characters.findIndex(c => c.id === id);
+              if (charIndex !== -1) {
+                currentPageData.characters[charIndex].x = x;
+                currentPageData.characters[charIndex].y = y;
+              }
+            } else if (type === 'dialogue') {
+              const dialogueIndex = currentPageData.dialogues.findIndex(d => d.id === id);
+              if (dialogueIndex !== -1) {
+                currentPageData.dialogues[dialogueIndex].x = x;
+                currentPageData.dialogues[dialogueIndex].y = y;
+              }
+            }
+          }
+        }
+        
+        // Stop dragging
+        function stopDrag() {
+          isDragging = false;
+          document.removeEventListener('mousemove', dragElement);
+          document.removeEventListener('mouseup', stopDrag);
+        }
+        
+        // Select an element
+        function selectElement(e) {
+          // Deselect previously selected element
+          if (selectedElement) {
+            selectedElement.classList.remove('selected');
+          }
+          
+          // Select the new element
+          selectedElement = e.currentTarget;
+          selectedElement.classList.add('selected');
+          
+          // Show properties for the selected element
+          showElementProperties(selectedElement);
+        }
+        
+        // Show properties for the selected element
+        function showElementProperties(element) {
+          const propertiesDiv = document.getElementById('element-properties');
+          const type = element.dataset.type;
+          
+          let html = '';
+          if (type === 'panel') {
+            const panelIndex = currentPageData.panels.findIndex(p => p.id === element.dataset.id);
+            const panel = currentPageData.panels[panelIndex];
+            
+            html = `
+              <div>
+                <label>Width:</label>
+                <input type="number" id="panel-width" value="${panel.width}" min="100" max="800">
+              </div>
+              <div>
+                <label>Height:</label>
+                <input type="number" id="panel-height" value="${panel.height}" min="100" max="800">
+              </div>
+              <div>
+                <label>Rotation:</label>
+                <input type="number" id="panel-rotation" value="${panel.rotation || 0}" min="-15" max="15">
+              </div>
+              <button class="editor-control" id="update-panel">Update Panel</button>
+              <button class="editor-control" id="delete-panel" style="background-color: #ff5555;">Delete</button>
+            `;
+          } else if (type === 'character') {
+            const charIndex = currentPageData.characters.findIndex(c => c.id === element.dataset.id);
+            const charPlacement = currentPageData.characters[charIndex];
+            const character = characters.find(c => c.id === charPlacement.characterId);
+            
+            html = `
+              <div>
+                <p><strong>Character:</strong> ${character ? character.name : 'Unknown'}</p>
+              </div>
+              <div>
+                <label>Scale:</label>
+                <input type="number" id="character-scale" value="${charPlacement.scale || 100}" min="50" max="150">
+              </div>
+              <div>
+                <label>Flip:</label>
+                <input type="checkbox" id="character-flip" ${charPlacement.flipped ? 'checked' : ''}>
+              </div>
+              <button class="editor-control" id="update-character">Update Character</button>
+              <button class="editor-control" id="delete-character" style="background-color: #ff5555;">Delete</button>
+            `;
+          } else if (type === 'dialogue') {
+            const dialogueIndex = currentPageData.dialogues.findIndex(d => d.id === element.dataset.id);
+            const dialogue = currentPageData.dialogues[dialogueIndex];
+            
+            html = `
+              <div>
+                <label>Text:</label>
+                <textarea id="dialogue-text">${dialogue.text}</textarea>
+              </div>
+              <div>
+                <label>Style:</label>
+                <select id="dialogue-style">
+                  <option value="speech" ${dialogue.style === 'speech' ? 'selected' : ''}>Speech Bubble</option>
+                  <option value="thought" ${dialogue.style === 'thought' ? 'selected' : ''}>Thought Bubble</option>
+                  <option value="caption" ${dialogue.style === 'caption' ? 'selected' : ''}>Caption</option>
+                </select>
+              </div>
+              <button class="editor-control" id="update-dialogue">Update Text</button>
+              <button class="editor-control" id="delete-dialogue" style="background-color: #ff5555;">Delete</button>
+            `;
+          }
+          
+          propertiesDiv.innerHTML = html;
+          
+          // Add event listeners to the new buttons
+          if (type === 'panel') {
+            document.getElementById('update-panel').addEventListener('click', updatePanel);
+            document.getElementById('delete-panel').addEventListener('click', deletePanel);
+          } else if (type === 'character') {
+            document.getElementById('update-character').addEventListener('click', updateCharacter);
+            document.getElementById('delete-character').addEventListener('click', deleteCharacter);
+          } else if (type === 'dialogue') {
+            document.getElementById('update-dialogue').addEventListener('click', updateDialogue);
+            document.getElementById('delete-dialogue').addEventListener('click', deleteDialogue);
+          }
+        }
+        
+        // Update the character list in the sidebar
+        function updateCharacterList() {
+          const characterList = document.getElementById('character-list');
+          characterList.innerHTML = '';
+          
+          characters.forEach(character => {
+            const characterItem = document.createElement('div');
+            characterItem.className = 'character-item-list';
+            characterItem.style.display = 'flex';
+            characterItem.style.alignItems = 'center';
+            characterItem.style.marginBottom = '10px';
+            characterItem.style.padding = '5px';
+            characterItem.style.border = '1px solid #ccc';
+            characterItem.style.borderRadius = '4px';
+            
+            // Character image or placeholder
+            const imgContainer = document.createElement('div');
+            imgContainer.style.marginRight = '10px';
+            
+            if (character.imageUrl) {
+              const img = document.createElement('img');
+              img.src = character.imageUrl;
+              img.alt = character.name;
+              img.style.width = '40px';
+              img.style.height = '40px';
+              img.style.objectFit = 'cover';
+              imgContainer.appendChild(img);
+            } else {
+              const placeholder = document.createElement('div');
+              placeholder.className = 'character-placeholder';
+              placeholder.style.width = '40px';
+              placeholder.style.height = '40px';
+              placeholder.style.fontSize = '14px';
+              placeholder.textContent = character.name.substring(0, 2).toUpperCase();
+              imgContainer.appendChild(placeholder);
+            }
+            
+            characterItem.appendChild(imgContainer);
+            
+            // Character name
+            const nameDiv = document.createElement('div');
+            nameDiv.style.flex = '1';
+            nameDiv.textContent = character.name;
+            characterItem.appendChild(nameDiv);
+            
+            // Add to page button
+            const addButton = document.createElement('button');
+            addButton.textContent = 'Add';
+            addButton.style.padding = '3px 8px';
+            addButton.style.backgroundColor = '#e951ff';
+            addButton.style.color = 'white';
+            addButton.style.border = 'none';
+            addButton.style.borderRadius = '3px';
+            addButton.style.cursor = 'pointer';
+            addButton.dataset.characterId = character.id;
+            
+            addButton.addEventListener('click', () => {
+              addCharacterToPage(character.id);
+            });
+            
+            characterItem.appendChild(addButton);
+            characterList.appendChild(characterItem);
+          });
+        }
+        
+        // Add a character to the current page
+        function addCharacterToPage(characterId) {
+          const newCharPlacement = {
+            id: 'char_' + nextElementId++,
+            characterId: characterId,
+            x: 100,
+            y: 100,
+            scale: 100,
+            flipped: false
+          };
+          
+          if (!currentPageData.characters) {
+            currentPageData.characters = [];
+          }
+          
+          currentPageData.characters.push(newCharPlacement);
+          
+          const character = characters.find(c => c.id === characterId);
+          createCharacterElement(newCharPlacement, character);
+        }
+        
+        // Update a panel's properties
+        function updatePanel() {
+          const panelWidth = parseInt(document.getElementById('panel-width').value);
+          const panelHeight = parseInt(document.getElementById('panel-height').value);
+          const panelRotation = parseInt(document.getElementById('panel-rotation').value);
+          
+          const panelId = selectedElement.dataset.id;
+          const panelIndex = currentPageData.panels.findIndex(p => p.id === panelId);
+          
+          if (panelIndex !== -1) {
+            // Update data model
+            currentPageData.panels[panelIndex].width = panelWidth;
+            currentPageData.panels[panelIndex].height = panelHeight;
+            currentPageData.panels[panelIndex].rotation = panelRotation;
+            
+            // Update visual element
+            selectedElement.style.width = panelWidth + 'px';
+            selectedElement.style.height = panelHeight + 'px';
+            selectedElement.style.transform = `rotate(${panelRotation}deg)`;
+          }
+        }
+        
+        // Delete a panel
+        function deletePanel() {
+          const panelId = selectedElement.dataset.id;
+          const panelIndex = currentPageData.panels.findIndex(p => p.id === panelId);
+          
+          if (panelIndex !== -1) {
+            // Remove from data model
+            currentPageData.panels.splice(panelIndex, 1);
+            
+            // Remove from the DOM
+            selectedElement.remove();
+            selectedElement = null;
+            
+            // Update properties panel
+            document.getElementById('element-properties').innerHTML = '<p>No element selected</p>';
+          }
+        }
+        
+        // Update a character's properties
+        function updateCharacter() {
+          const scale = parseInt(document.getElementById('character-scale').value);
+          const flipped = document.getElementById('character-flip').checked;
+          
+          const charId = selectedElement.dataset.id;
+          const charIndex = currentPageData.characters.findIndex(c => c.id === charId);
+          
+          if (charIndex !== -1) {
+            // Update data model
+            currentPageData.characters[charIndex].scale = scale;
+            currentPageData.characters[charIndex].flipped = flipped;
+            
+            // Update visual element
+            const imgElement = selectedElement.querySelector('img') || selectedElement.querySelector('.character-placeholder');
+            imgElement.style.transform = `scale(${scale/100}) ${flipped ? 'scaleX(-1)' : ''}`;
+          }
+        }
+        
+        // Delete a character
+        function deleteCharacter() {
+          const charId = selectedElement.dataset.id;
+          const charIndex = currentPageData.characters.findIndex(c => c.id === charId);
+          
+          if (charIndex !== -1) {
+            // Remove from data model
+            currentPageData.characters.splice(charIndex, 1);
+            
+            // Remove from the DOM
+            selectedElement.remove();
+            selectedElement = null;
+            
+            // Update properties panel
+            document.getElementById('element-properties').innerHTML = '<p>No element selected</p>';
+          }
+        }
+        
+        // Update a dialogue's properties
+        function updateDialogue() {
+          const text = document.getElementById('dialogue-text').value;
+          const style = document.getElementById('dialogue-style').value;
+          
+          const dialogueId = selectedElement.dataset.id;
+          const dialogueIndex = currentPageData.dialogues.findIndex(d => d.id === dialogueId);
+          
+          if (dialogueIndex !== -1) {
+            // Update data model
+            currentPageData.dialogues[dialogueIndex].text = text;
+            currentPageData.dialogues[dialogueIndex].style = style;
+            
+            // Update visual element
+            selectedElement.textContent = text;
+            
+            // Update bubble style
+            selectedElement.className = 'speech-bubble'; // Reset class
+            if (style === 'thought') {
+              selectedElement.classList.add('thought-bubble');
+            } else if (style === 'caption') {
+              selectedElement.classList.add('caption-bubble');
+            }
+          }
+        }
+        
+        // Delete a dialogue
+        function deleteDialogue() {
+          const dialogueId = selectedElement.dataset.id;
+          const dialogueIndex = currentPageData.dialogues.findIndex(d => d.id === dialogueId);
+          
+          if (dialogueIndex !== -1) {
+            // Remove from data model
+            currentPageData.dialogues.splice(dialogueIndex, 1);
+            
+            // Remove from the DOM
+            selectedElement.remove();
+            selectedElement = null;
+            
+            // Update properties panel
+            document.getElementById('element-properties').innerHTML = '<p>No element selected</p>';
+          }
+        }
         
         // Tab switching
         document.querySelectorAll('.editor-tab').forEach(tab => {
@@ -405,26 +1008,778 @@
             const tabName = this.dataset.tab;
             console.log(`Switched to ${tabName} tab`);
             
-            // In a full implementation, we would show/hide different content here
+            if (tabName === 'characters') {
+              document.getElementById('character-section').style.display = 'block';
+            } else {
+              document.getElementById('character-section').style.display = 'none';
+            }
           });
         });
         
-        // Tool buttons (placeholder functionality for now)
-        document.querySelectorAll('.tool-button').forEach(button => {
-          button.addEventListener('click', function() {
-            alert(`The "${this.textContent}" tool is not yet implemented`);
-          });
+        // Tool button initialization
+        document.getElementById('add-panel').addEventListener('click', function() {
+          const newPanel = {
+            id: 'panel_' + nextElementId++,
+            x: 50,
+            y: 50,
+            width: 300,
+            height: 200,
+            rotation: 0
+          };
+          
+          if (!currentPageData.panels) {
+            currentPageData.panels = [];
+          }
+          
+          currentPageData.panels.push(newPanel);
+          createPanelElement(newPanel);
         });
         
-        // Save button (placeholder functionality for now)
-        document.getElementById('save-button').addEventListener('click', function() {
-          alert('Save functionality is coming soon!');
+        document.getElementById('add-speech').addEventListener('click', function() {
+          const newDialogue = {
+            id: 'dialogue_' + nextElementId++,
+            x: 100,
+            y: 100,
+            text: 'New dialogue',
+            style: 'speech'
+          };
+          
+          if (!currentPageData.dialogues) {
+            currentPageData.dialogues = [];
+          }
+          
+          currentPageData.dialogues.push(newDialogue);
+          createDialogueElement(newDialogue);
         });
         
-        // Preview button (placeholder functionality for now)
+        document.getElementById('add-caption').addEventListener('click', function() {
+          const newCaption = {
+            id: 'dialogue_' + nextElementId++,
+            x: 100,
+            y: 100,
+            text: 'Narrator: Meanwhile...',
+            style: 'caption'
+          };
+          
+          if (!currentPageData.dialogues) {
+            currentPageData.dialogues = [];
+          }
+          
+          currentPageData.dialogues.push(newCaption);
+          createDialogueElement(newCaption);
+        });
+        
+        // Save button
+        document.getElementById('save-button').addEventListener('click', async function() {
+          try {
+            // Prepare page data for saving
+            const pageContent = JSON.stringify({
+              panels: currentPageData.panels || [],
+              characters: currentPageData.characters || [],
+              dialogues: currentPageData.dialogues || []
+            });
+            
+            // Check if page already exists
+            if (currentPageData.id) {
+              // Update existing page
+              const response = await fetch(`/api/pages/${currentPageData.id}`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  content: pageContent
+                })
+              });
+              
+              if (response.ok) {
+                alert('Page saved successfully!');
+              } else {
+                console.error('Failed to save page');
+                alert('Failed to save page');
+              }
+            } else {
+              // Create new page
+              const response = await fetch(`/api/comics/${comicId}/pages`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  pageNumber: currentPage,
+                  content: pageContent
+                })
+              });
+              
+              if (response.ok) {
+                const savedPage = await response.json();
+                currentPageData.id = savedPage.id;
+                alert('Page created successfully!');
+              } else {
+                console.error('Failed to create page');
+                alert('Failed to create page');
+              }
+            }
+          } catch (error) {
+            console.error('Error saving page:', error);
+            alert('Error saving page');
+          }
+        });
+        
+        // Preview button
         document.getElementById('preview-button').addEventListener('click', function() {
-          alert('Preview functionality is coming soon!');
+          // Create a new window/tab for the preview
+          const previewWindow = window.open('', '_blank');
+          
+          // Create HTML content for the preview
+          let previewHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>${comicData.title} - Preview</title>
+              <style>
+                body {
+                  font-family: 'Comic Sans MS', cursive, sans-serif;
+                  background-color: #f8e6ff;
+                  margin: 0;
+                  padding: 20px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                }
+                .preview-container {
+                  background-color: white;
+                  border: 5px solid #000;
+                  box-shadow: 8px 8px 0 #000;
+                  padding: 20px;
+                  position: relative;
+                }
+                .preview-title {
+                  font-size: 24px;
+                  text-align: center;
+                  margin-bottom: 20px;
+                  color: #e951ff;
+                }
+                .comic-panel {
+                  position: absolute;
+                  background-color: white;
+                  border: 3px solid #000;
+                }
+                .character-item {
+                  position: absolute;
+                }
+                .speech-bubble {
+                  position: absolute;
+                  background-color: white;
+                  border: 2px solid #000;
+                  border-radius: 20px;
+                  padding: 10px;
+                }
+                .speech-bubble::before {
+                  content: "";
+                  position: absolute;
+                  bottom: -20px;
+                  left: 20px;
+                  border-width: 20px 0 0 20px;
+                  border-style: solid;
+                  border-color: #000 transparent transparent transparent;
+                }
+                .thought-bubble {
+                  border-radius: 50%;
+                }
+                .caption-bubble {
+                  border-radius: 0;
+                  background-color: #ffffcc;
+                }
+                .character-placeholder {
+                  width: 60px;
+                  height: 120px;
+                  background-color: #e951ff;
+                  border: 2px solid #000;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: white;
+                  font-weight: bold;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="preview-title">${comicData.title} - Page Preview</div>
+              <div class="preview-container" style="width: ${document.getElementById('comic-page').offsetWidth}px; height: ${document.getElementById('comic-page').offsetHeight}px;">
+          `;
+          
+          // Add panels
+          if (currentPageData.panels) {
+            currentPageData.panels.forEach(panel => {
+              previewHtml += `
+                <div class="comic-panel" style="left: ${panel.x}px; top: ${panel.y}px; width: ${panel.width}px; height: ${panel.height}px; transform: rotate(${panel.rotation || 0}deg);"></div>
+              `;
+            });
+          }
+          
+          // Add characters
+          if (currentPageData.characters) {
+            currentPageData.characters.forEach(charPlacement => {
+              const character = characters.find(c => c.id === charPlacement.characterId);
+              if (character) {
+                previewHtml += `
+                  <div class="character-item" style="left: ${charPlacement.x}px; top: ${charPlacement.y}px;">
+                `;
+                
+                if (character.imageUrl) {
+                  previewHtml += `
+                    <img src="${character.imageUrl}" alt="${character.name}" style="max-height: 180px; transform: scale(${charPlacement.scale/100 || 1}) ${charPlacement.flipped ? 'scaleX(-1)' : ''};">
+                  `;
+                } else {
+                  previewHtml += `
+                    <div class="character-placeholder">${character.name.substring(0, 2).toUpperCase()}</div>
+                  `;
+                }
+                
+                previewHtml += `</div>`;
+              }
+            });
+          }
+          
+          // Add dialogues
+          if (currentPageData.dialogues) {
+            currentPageData.dialogues.forEach(dialogue => {
+              let bubbleClass = 'speech-bubble';
+              if (dialogue.style === 'thought') {
+                bubbleClass += ' thought-bubble';
+              } else if (dialogue.style === 'caption') {
+                bubbleClass += ' caption-bubble';
+              }
+              
+              previewHtml += `
+                <div class="${bubbleClass}" style="left: ${dialogue.x}px; top: ${dialogue.y}px;">
+                  ${dialogue.text}
+                </div>
+              `;
+            });
+          }
+          
+          previewHtml += `
+              </div>
+            </body>
+            </html>
+          `;
+          
+          previewWindow.document.write(previewHtml);
+          previewWindow.document.close();
         });
+        
+        // Page navigation
+        document.getElementById('prev-page').addEventListener('click', function() {
+          if (currentPage > 1) {
+            savePage().then(() => {
+              currentPage--;
+              const pageIndex = currentPage - 1;
+              
+              if (pageIndex < comicData.pages.length) {
+                currentPageData = comicData.pages[pageIndex];
+                renderCurrentPage();
+              } else {
+                // Create a new page object
+                currentPageData = {
+                  pageNumber: currentPage,
+                  panels: [],
+                  characters: [],
+                  dialogues: []
+                };
+                comicData.pages.splice(pageIndex, 0, currentPageData);
+                renderCurrentPage();
+              }
+            });
+          }
+        });
+        
+        document.getElementById('next-page').addEventListener('click', function() {
+          savePage().then(() => {
+            currentPage++;
+            const pageIndex = currentPage - 1;
+            
+            if (pageIndex < comicData.pages.length) {
+              currentPageData = comicData.pages[pageIndex];
+              renderCurrentPage();
+            } else {
+              // Create a new page object
+              currentPageData = {
+                pageNumber: currentPage,
+                panels: [],
+                characters: [],
+                dialogues: []
+              };
+              comicData.pages.push(currentPageData);
+              renderCurrentPage();
+            }
+          });
+        });
+        
+        // Save current page
+        async function savePage() {
+          // Only save if there's actual content
+          if (
+            (currentPageData.panels && currentPageData.panels.length > 0) ||
+            (currentPageData.characters && currentPageData.characters.length > 0) ||
+            (currentPageData.dialogues && currentPageData.dialogues.length > 0)
+          ) {
+            try {
+              const pageContent = JSON.stringify({
+                panels: currentPageData.panels || [],
+                characters: currentPageData.characters || [],
+                dialogues: currentPageData.dialogues || []
+              });
+              
+              if (currentPageData.id) {
+                // Update existing page
+                await fetch(`/api/pages/${currentPageData.id}`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    content: pageContent
+                  })
+                });
+              } else {
+                // Create new page
+                const response = await fetch(`/api/comics/${comicId}/pages`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    pageNumber: currentPage,
+                    content: pageContent
+                  })
+                });
+                
+                if (response.ok) {
+                  const savedPage = await response.json();
+                  currentPageData.id = savedPage.id;
+                }
+              }
+            } catch (error) {
+              console.error('Error saving page:', error);
+            }
+          }
+          
+          return Promise.resolve();
+        }
+        
+        // Layout presets
+        document.getElementById('layout-1').addEventListener('click', function() {
+          // Clear existing panels
+          currentPageData.panels = [];
+          document.querySelectorAll('.comic-panel').forEach(el => el.remove());
+          
+          // Add one large panel
+          const newPanel = {
+            id: 'panel_' + nextElementId++,
+            x: 50,
+            y: 50,
+            width: 700,
+            height: 900,
+            rotation: 0
+          };
+          
+          currentPageData.panels.push(newPanel);
+          createPanelElement(newPanel);
+        });
+        
+        document.getElementById('layout-2').addEventListener('click', function() {
+          // Clear existing panels
+          currentPageData.panels = [];
+          document.querySelectorAll('.comic-panel').forEach(el => el.remove());
+          
+          // Add two panels
+          const panel1 = {
+            id: 'panel_' + nextElementId++,
+            x: 50,
+            y: 50,
+            width: 700,
+            height: 425,
+            rotation: 0
+          };
+          
+          const panel2 = {
+            id: 'panel_' + nextElementId++,
+            x: 50,
+            y: 525,
+            width: 700,
+            height: 425,
+            rotation: 0
+          };
+          
+          currentPageData.panels.push(panel1, panel2);
+          createPanelElement(panel1);
+          createPanelElement(panel2);
+        });
+        
+        document.getElementById('layout-3').addEventListener('click', function() {
+          // Clear existing panels
+          currentPageData.panels = [];
+          document.querySelectorAll('.comic-panel').forEach(el => el.remove());
+          
+          // Add three panels
+          const panel1 = {
+            id: 'panel_' + nextElementId++,
+            x: 50,
+            y: 50,
+            width: 700,
+            height: 300,
+            rotation: 0
+          };
+          
+          const panel2 = {
+            id: 'panel_' + nextElementId++,
+            x: 50,
+            y: 375,
+            width: 340,
+            height: 575,
+            rotation: 0
+          };
+          
+          const panel3 = {
+            id: 'panel_' + nextElementId++,
+            x: 410,
+            y: 375,
+            width: 340,
+            height: 575,
+            rotation: 0
+          };
+          
+          currentPageData.panels.push(panel1, panel2, panel3);
+          createPanelElement(panel1);
+          createPanelElement(panel2);
+          createPanelElement(panel3);
+        });
+        
+        document.getElementById('layout-4').addEventListener('click', function() {
+          // Clear existing panels
+          currentPageData.panels = [];
+          document.querySelectorAll('.comic-panel').forEach(el => el.remove());
+          
+          // Add four panels
+          const panel1 = {
+            id: 'panel_' + nextElementId++,
+            x: 50,
+            y: 50,
+            width: 340,
+            height: 425,
+            rotation: 0
+          };
+          
+          const panel2 = {
+            id: 'panel_' + nextElementId++,
+            x: 410,
+            y: 50,
+            width: 340,
+            height: 425,
+            rotation: 0
+          };
+          
+          const panel3 = {
+            id: 'panel_' + nextElementId++,
+            x: 50,
+            y: 525,
+            width: 340,
+            height: 425,
+            rotation: 0
+          };
+          
+          const panel4 = {
+            id: 'panel_' + nextElementId++,
+            x: 410,
+            y: 525,
+            width: 340,
+            height: 425,
+            rotation: 0
+          };
+          
+          currentPageData.panels.push(panel1, panel2, panel3, panel4);
+          createPanelElement(panel1);
+          createPanelElement(panel2);
+          createPanelElement(panel3);
+          createPanelElement(panel4);
+        });
+        
+        // Add new character button
+        document.getElementById('add-new-character').addEventListener('click', async function() {
+          const characterName = prompt('Enter character name:');
+          if (characterName) {
+            try {
+              const response = await fetch(`/api/comics/${comicId}/characters`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  name: characterName,
+                  description: '',
+                  imageUrl: '',
+                  isGenerated: false
+                })
+              });
+              
+              if (response.ok) {
+                const newCharacter = await response.json();
+                characters.push(newCharacter);
+                updateCharacterList();
+                alert('Character created successfully!');
+              } else {
+                console.error('Failed to create character');
+                alert('Failed to create character');
+              }
+            } catch (error) {
+              console.error('Error creating character:', error);
+              alert('Error creating character');
+            }
+          }
+        });
+        
+        // Implement drag and drop for tools
+        let draggedToolType = null;
+        
+        // Initialize draggable for all tool buttons
+        const toolButtons = document.querySelectorAll('.tool-button');
+        toolButtons.forEach(button => {
+          button.setAttribute('draggable', 'true');
+          button.addEventListener('dragstart', handleToolDragStart);
+          button.addEventListener('dragend', handleToolDragEnd);
+        });
+        
+        // Add drop zone for the comic page
+        const comicPage = document.getElementById('comic-page');
+        comicPage.addEventListener('dragover', handleDragOver);
+        comicPage.addEventListener('drop', handleToolDrop);
+        
+        // Handle the start of drag from toolbox
+        function handleToolDragStart(e) {
+          draggedToolType = e.target.id;
+          e.dataTransfer.setData('text/plain', e.target.id);
+          e.dataTransfer.effectAllowed = 'copy';
+          
+          // Add visual feedback class
+          e.target.classList.add('dragging');
+        }
+        
+        // Handle the end of dragging (cleanup if dropped outside valid target)
+        function handleToolDragEnd(e) {
+          // Remove any highlight classes that might still be active
+          document.getElementById('comic-page').classList.remove('dragover');
+          // Remove the dragging style from the button
+          e.target.classList.remove('dragging');
+          draggedToolType = null;
+        }
+        
+        // Handle dragover to enable drop
+        function handleDragOver(e) {
+          if (draggedToolType) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            
+            // Add highlight class to show drop zone
+            e.currentTarget.classList.add('dragover');
+            
+            // Remove highlight after a short delay when not hovering
+            setTimeout(() => {
+              if (!e.currentTarget.matches(':hover')) {
+                e.currentTarget.classList.remove('dragover');
+              }
+            }, 100);
+          }
+        }
+        
+        // Handle the drop of a tool onto the comic page
+        function handleToolDrop(e) {
+          e.preventDefault();
+          
+          // Remove the highlight class
+          e.currentTarget.classList.remove('dragover');
+          
+          if (!draggedToolType) return;
+          
+          // Remove dragging class from the source element
+          document.querySelectorAll('.tool-button.dragging').forEach(btn => {
+            btn.classList.remove('dragging');
+          });
+          
+          // Calculate position relative to comic page
+          const rect = comicPage.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          
+          // Handle different tool types
+          switch(draggedToolType) {
+            case 'add-panel':
+              addPanelAt(x, y);
+              break;
+            case 'add-speech':
+              addSpeechBubbleAt(x, y);
+              break;
+            case 'add-caption':
+              addCaptionAt(x, y);
+              break;
+            case 'add-character':
+              // Show character selection dialog at position
+              showCharacterSelectionAt(x, y);
+              break;
+          }
+          
+          draggedToolType = null;
+        }
+        
+        // Add a speech bubble at specific coordinates
+        function addSpeechBubbleAt(x, y) {
+          const newDialogue = {
+            id: 'dialogue_' + nextElementId++,
+            x: x,
+            y: y,
+            text: 'New speech bubble',
+            style: 'speech'
+          };
+          
+          if (!currentPageData.dialogues) {
+            currentPageData.dialogues = [];
+          }
+          
+          currentPageData.dialogues.push(newDialogue);
+          const element = createDialogueElement(newDialogue);
+          
+          // Select the newly created element
+          selectElement({ currentTarget: element });
+        }
+        
+        // Add a caption at specific coordinates
+        function addCaptionAt(x, y) {
+          const newCaption = {
+            id: 'dialogue_' + nextElementId++,
+            x: x,
+            y: y,
+            text: 'New caption',
+            style: 'caption'
+          };
+          
+          if (!currentPageData.dialogues) {
+            currentPageData.dialogues = [];
+          }
+          
+          currentPageData.dialogues.push(newCaption);
+          const element = createDialogueElement(newCaption);
+          
+          // Select the newly created element
+          selectElement({ currentTarget: element });
+        }
+        
+        // Add a panel at specific coordinates
+        function addPanelAt(x, y) {
+          const newPanel = {
+            id: 'panel_' + nextElementId++,
+            x: x,
+            y: y,
+            width: 200,
+            height: 200
+          };
+          
+          if (!currentPageData.panels) {
+            currentPageData.panels = [];
+          }
+          
+          currentPageData.panels.push(newPanel);
+          const element = createPanelElement(newPanel);
+          
+          // Select the newly created element
+          selectElement({ currentTarget: element });
+        }
+        
+        // Show character selection dialog at specific position
+        function showCharacterSelectionAt(x, y) {
+          if (characters.length === 0) {
+            alert('No characters available. Please add characters first.');
+            
+            // Show the characters tab
+            const characterTab = document.querySelector('.editor-tab[data-tab="characters"]');
+            if (characterTab) {
+              characterTab.click();
+            }
+            return;
+          }
+          
+          // Create character selection popup
+          const popup = document.createElement('div');
+          popup.className = 'character-selection-popup';
+          popup.style.position = 'absolute';
+          popup.style.left = x + 'px';
+          popup.style.top = y + 'px';
+          popup.style.backgroundColor = 'white';
+          popup.style.border = '3px solid #000';
+          popup.style.borderRadius = '8px';
+          popup.style.padding = '10px';
+          popup.style.zIndex = '1000';
+          popup.style.maxHeight = '300px';
+          popup.style.overflowY = 'auto';
+          
+          // Add heading
+          const heading = document.createElement('h4');
+          heading.textContent = 'Select Character';
+          heading.style.marginTop = '0';
+          popup.appendChild(heading);
+          
+          // Add character options
+          characters.forEach(character => {
+            const option = document.createElement('div');
+            option.className = 'character-option';
+            option.textContent = character.name;
+            option.style.padding = '5px';
+            option.style.cursor = 'pointer';
+            option.style.borderBottom = '1px solid #eee';
+            
+            option.addEventListener('click', function() {
+              const newCharPlacement = {
+                id: 'char_' + nextElementId++,
+                characterId: character.id,
+                x: x,
+                y: y
+              };
+              
+              if (!currentPageData.characters) {
+                currentPageData.characters = [];
+              }
+              
+              currentPageData.characters.push(newCharPlacement);
+              const element = createCharacterElement(newCharPlacement, character);
+              
+              // Select the newly created element
+              selectElement({ currentTarget: element });
+              
+              // Remove popup
+              document.getElementById('comic-page').removeChild(popup);
+            });
+            
+            popup.appendChild(option);
+          });
+          
+          // Add close button
+          const closeBtn = document.createElement('button');
+          closeBtn.textContent = 'Cancel';
+          closeBtn.style.marginTop = '10px';
+          closeBtn.style.padding = '5px 10px';
+          closeBtn.style.backgroundColor = '#e951ff';
+          closeBtn.style.color = 'white';
+          closeBtn.style.border = '2px solid #000';
+          closeBtn.style.borderRadius = '4px';
+          closeBtn.style.cursor = 'pointer';
+          
+          closeBtn.addEventListener('click', function() {
+            document.getElementById('comic-page').removeChild(popup);
+          });
+          
+          popup.appendChild(closeBtn);
+          document.getElementById('comic-page').appendChild(popup);
+        }
       </script>
     </body>
     </html>

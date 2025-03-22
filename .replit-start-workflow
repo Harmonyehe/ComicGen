@@ -1,2 +1,2 @@
-run = "node run.js"
+run = "chmod +x start_app.sh && ./start_app.sh"
 language = "nodejs"
