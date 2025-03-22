@@ -1,5 +1,4 @@
 modules = ["nodejs-20"]
-run = "sudo ufw status"
 
 [[ports]]
 localPort = 3000
@@ -11,6 +10,3 @@ externalPort = 80
 
 [nix]
 channel = "stable-24_05"
-
-[deployment]
-run = ["sh", "-c", "sudo ufw status"]
